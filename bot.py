@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from synack import synack
 import time
-
+from slack import Slack
 
 ###### PLEASE READ THIS FIRST #####
 ## This is the URL you must read ##
@@ -49,10 +49,14 @@ claimSleep = 100
 
 s1 = synack()
 s1.getSessionToken()
+
+# register slack object to send mission details when claimed
+slack = Slack()
 while True:
     time.sleep(pollSleep)
     missionJson = s1.pollMissions()
     if len(missionJson) == 0:
         continue
-    s1.claimMission(missionJson)
+    missionList = s1.claimMission(missionJson)
+    slack.send_alert_for_mission(missionList)
     time.sleep(claimSleep)
