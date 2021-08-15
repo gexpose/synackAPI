@@ -30,8 +30,16 @@ login_url = https://login.synack.com
 email = your.email@domain.tld
 password = your.synack.password
 authy_secret = ABCDEFGHIJKLMNOPQRSTUVWXYZ======
-webhook_url = https://hooks.slack.com/services/...
 ```
+
+## slack.conf
+This is a required config file for slack integration, and is expected to be in the directory ~/.synack/
+```
+[DEFAULT]
+mission_webhook_url = "https://hooks.slack.com/services/[SLACK_IDENTIFIERS]"
+```
+
+
 * login_wait
   * Number of seconds to wait for the platform's website to be loaded before attempting to log in. Can take a while.
 * login_url
