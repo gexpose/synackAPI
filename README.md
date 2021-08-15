@@ -32,14 +32,6 @@ password = your.synack.password
 authy_secret = ABCDEFGHIJKLMNOPQRSTUVWXYZ======
 ```
 
-## slack.conf
-This is a required config file for slack integration, and is expected to be in the directory ~/.synack/
-```
-[DEFAULT]
-mission_webhook_url = https://hooks.slack.com/services/[SLACK_IDENTIFIERS]
-```
-
-
 * login_wait
   * Number of seconds to wait for the platform's website to be loaded before attempting to log in. Can take a while.
 * login_url
@@ -52,7 +44,14 @@ mission_webhook_url = https://hooks.slack.com/services/[SLACK_IDENTIFIERS]
   * base32 secret for generating Authy tokens
   * Guillaume Boudreau provide a nice [walk through](https://gist.github.com/gboudreau/94bb0c11a6209c82418d01a59d958c93) for getting this secret
     * Follow the above to get Authy into debug mode, then use [THIS CODE](https://gist.github.com/louiszuckerman/2dd4fddf8097ce89594bb33426ab5e23#ok-thats-nice-but-i-want-to-get-rid-of-authy-now) to get your valid TOTP SECRET!
-* webhook_url is the incoming webhook url for slack notifications.  This will be used from the bot.py to inform you about obtained missions in real time. To create one simply visit https://api.slack.com/apps?new_app=1 and create an app to add later an incoming webhook into it.  You can choose any workspace to do so.
+
+
+## slack.conf
+This is a required config file for slack integration, and is expected to be in the directory ~/.synack/
+```
+[DEFAULT]
+mission_webhook_url = https://hooks.slack.com/services/[SLACK_IDENTIFIERS]
+```
 
 ## requirements.txt
 Your best bet to have all required python3 modules is to run `pip3 install -r requirements.txt`. I cannot help troubleshoot any other modules.
