@@ -17,7 +17,7 @@ class Slack:
       payout = missionList[i]["payout"]
       claimed = missionList[i]["claimed"]
       if claimed == True:
-        message = f"Claimed new mission!!\n*Mission: *{target}\n*Payout: *{payout}" # build your message
-        requests.post(URL, json={"text": message})
+        message = f"Claimed new mission!!\n*Mission: * {target}\n*Payout: * ${payout}" # build your message
+        r = requests.post(URL, json={"text": message})
       else:
         pass

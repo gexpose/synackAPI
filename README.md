@@ -36,7 +36,7 @@ authy_secret = ABCDEFGHIJKLMNOPQRSTUVWXYZ======
 This is a required config file for slack integration, and is expected to be in the directory ~/.synack/
 ```
 [DEFAULT]
-mission_webhook_url = "https://hooks.slack.com/services/[SLACK_IDENTIFIERS]"
+mission_webhook_url = https://hooks.slack.com/services/[SLACK_IDENTIFIERS]
 ```
 
 
