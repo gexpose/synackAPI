@@ -378,7 +378,7 @@ class synack:
         IPs = []
         for i in range(len(cidrs)):
             if cidrs[i] != "":
-                for ip in ipaddress.ip_network(cidrs[i]):
+                for ip in IPNetwork(cidrs[i]):
                     IPs.append(str(ip))
         return(IPs)
     
@@ -682,7 +682,7 @@ class synack:
                 claimed = True
             else:
                 claimed = False
-            missionDict = {"target": campaign, "payout": payout, "claimed": claimed}
+            missionDict = {"target": listingID, "payout": payout, "claimed": claimed}
             missionList.append(missionDict)
         return(missionList)
             
