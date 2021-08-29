@@ -45,7 +45,7 @@ class synack:
         self.login_wait = int(self.config['DEFAULT']['login_wait'])
         self.login_url = self.config['DEFAULT']['login_url']
         self.authySecret = self.config['DEFAULT']['authy_secret']
-        self.headless = False
+        self.headless = True
 
 ## Set to 'True' for troubleshooting with Burp Suite ##
         self.Proxy = False
