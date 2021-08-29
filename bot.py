@@ -52,6 +52,7 @@ s1.getSessionToken()
 
 # register slack object to send mission details when claimed
 slack = Slack()
+print("Starting mission claim bot")
 while True:
     time.sleep(pollSleep)
     missionJson = s1.pollMissions()
