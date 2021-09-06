@@ -1,12 +1,9 @@
-import ipaddress
 from netaddr import IPNetwork
 import requests
-import os
 import json
 from pathlib import Path
 import warnings
 import operator
-import sys
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -16,6 +13,7 @@ from selenium.webdriver.firefox.options import Options
 import configparser
 import time
 from datetime import datetime
+import pytz
 import pyotp
 from urllib.parse import urlparse
 
@@ -611,9 +609,10 @@ class synack:
         with open('/tmp/synacktoken',"w") as f:
             f.write(session)
         f.close()
-        time_now = datetime.now()
-        time_now_string = time_now.strftime("%d/%m/%Y  %H:%M:%S")
-        print("Connected to platform  --  " + time_now_string)
+        IST = pytz.timezone('Asia/Kolkata')
+        time_now = datetime.now(tz=IST)
+        time_now_string = time_now.strftime("%d-%m-%Y  %I:%M:%S %p")
+        print("Connected to platform  -  " + time_now_string)
         if self.headless == True:
             driver.quit()
         return(0)
