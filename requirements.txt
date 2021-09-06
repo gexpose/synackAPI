@@ -4,3 +4,4 @@ pyotp==2.6.0
 requests==2.25.1
 selenium==3.141.0
 urllib3==1.26.3
+pytz==2021.1
