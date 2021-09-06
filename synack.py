@@ -15,6 +15,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.firefox.options import Options
 import configparser
 import time
+from datetime import datetime
 import pyotp
 from urllib.parse import urlparse
 
@@ -610,7 +611,9 @@ class synack:
         with open('/tmp/synacktoken',"w") as f:
             f.write(session)
         f.close()
-        print("Connected to platform.")
+        time_now = datetime.now()
+        time_now_string = time_now.strftime("%d/%m/%Y  %H:%M:%S")
+        print("Connected to platform  --  " + time_now_string)
         if self.headless == True:
             driver.quit()
         return(0)
