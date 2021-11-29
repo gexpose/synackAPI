@@ -4,4 +4,8 @@ pyotp==2.6.0
 requests==2.25.1
 selenium==3.141.0
 urllib3==1.26.3
+<<<<<<< HEAD
 pytz==2021.1
+=======
+psycopg2-binary==2.9.1
+>>>>>>> b739e25f8b80975002c2beb7f28504a5d577fdf7

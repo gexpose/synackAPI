@@ -3,6 +3,11 @@
 ## Config file is set statically to /root/.synack/synack.conf as per docker setup.
 ## If you want to use it as standalone you can remove the option and use this script to poll every 1 hour for new targets and auto register them.
 
+
+###############################################
+## THIS HAS NOTHING TO DO WITH `bot.py`!!!!! ##
+###############################################
+
 from synack import synack
 import time
 

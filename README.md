@@ -1,4 +1,4 @@
-# Library for interacting with Synack API
+# Library for interacting with Synack API 
 This is a library and set of scripts that make SRT life a little easier when interacting with the platform from a linux commandline.
 * Connect to platform
   * Stay connected to the platform
@@ -13,13 +13,17 @@ This is a library and set of scripts that make SRT life a little easier when int
   * Slugs
   * Target types
 * Enable mission-claiming bots
+* Manage notifications
 
-# Acknowledgement
-Thank you Malcolm and Nicolas for helping out!
+# Acknowledgements
+Thank you Malcolm, Nicolas, and pmnh for making this better!
 
 # Configuration requirements 
 ## Operating System
 This has been developed on Linux. I have no idea if it will work on Windows. It might, but your mileage may vary. I do not use windows. If you do, and you want to test, please do. 
+
+## Configuration Directories
+The required directory is `~/.synack`.
 
 ## synack.conf
 This is a required config file, and is expected to be in the directory ~/.synack/
@@ -44,6 +48,7 @@ authy_secret = ABCDEFGHIJKLMNOPQRSTUVWXYZ======
   * base32 secret for generating Authy tokens
   * Guillaume Boudreau provide a nice [walk through](https://gist.github.com/gboudreau/94bb0c11a6209c82418d01a59d958c93) for getting this secret
     * Follow the above to get Authy into debug mode, then use [THIS CODE](https://gist.github.com/louiszuckerman/2dd4fddf8097ce89594bb33426ab5e23#ok-thats-nice-but-i-want-to-get-rid-of-authy-now) to get your valid TOTP SECRET!
+<<<<<<< HEAD
 
 
 ## slack.conf
@@ -52,12 +57,20 @@ This is a required config file for slack integration, and is expected to be in t
 [DEFAULT]
 mission_webhook_url = https://hooks.slack.com/services/[SLACK_IDENTIFIERS]
 ```
+=======
+* webhook_url is the incoming webhook url for slack notifications.  This will be used from the bot.py to inform you about obtained missions in real time. To create one simply visit https://api.slack.com/apps?new_app=1 and create an app to add later an incoming webhook into it.  You can choose any workspace to do so.
+* gecko true/false (default true) - if false, the `requests` module will be used for the login flow, instead of the geckodriver (works well on Windows)
+* proxy true/false (default false) - if true, route requests through a local proxy for debugging
+* proxyport (default 8080) - local proxy port used for debugging
+* session_token_path (default /tmp/synacktoken) - location to store synack token
+* notification_token_path (default /tmp/notificationtoken) - location to store notification token
+>>>>>>> b739e25f8b80975002c2beb7f28504a5d577fdf7
 
 ## requirements.txt
 Your best bet to have all required python3 modules is to run `pip3 install -r requirements.txt`. I cannot help troubleshoot any other modules.
 
 ## geckodriver
-You must install [geckodriver](https://github.com/mozilla/geckodriver/) and it must be in your $PATH
+You must install [geckodriver](https://github.com/mozilla/geckodriver/) and it must be in your $PATH (note, this is currently true even if you have `gecko` set to `False` in the config file)
 
 # Synack API python3 module
 
@@ -75,6 +88,10 @@ This method creates an object that can be used to interact with the LP/LP+ platf
 
 ## connectToPlatform()
 This method takes connects to the Synack platform and writes the session token to disk. It also stays connected by auto-clicking the alert.
+### geckodriver
+This method only been tested with geckodriver/Firefox. Chrome has not been tested. 
+#### SSL Certificates
+This method will create the directory `~/.synack/selenium.profile`. The first time connecting to the SRT Platform, you will be asked to install the cacert.crt file. This allows the cert to be permanently stored and used with geckodriver.
 ### Options
 ```
 # Push all synack.py traffic through proxy
@@ -124,6 +141,9 @@ This method takes a target codename and returns the project slug. This method is
 ## getCodenameFromSlug(slug)
 This method takes a project slug and returns the target codename. This method is generally not used by end users, but rather supports other function methods.
 
+## getCurrentTargetSlug()
+This method returns the slug of whatever target you are connected to. If not connected to a target, this will return `None`.
+
 ## getScope(codename)
 This method takes a codename and returns its scope as a list of dicts.
 * `Host` targets return the CIDR notation ranges
@@ -157,11 +177,14 @@ https://www.example.com/*
 This method registers all unregistered targets
 <br>**Thanks Ozgur for most of the leg work :)**
 
-## getAnalytics(codename)
-This method takes a codename and returns a list of all endpoints reported in that target's `Analytics` tab.
+## getAnalytics(codename, status)
+This method takes a codename and status `accepted | rejected | in_queue | all` and returns a list of all endpoints reported in that target's `Analytics` tab.
 
 ## getHydra(codename)
 This method takes a codename and returns a json of all hydra reported in that target's `Hydra` tab.
+
+## getRoes(slug):
+This method takes a target slug and returns any additional rules of engagement as a list.
 
 ## pollMissions()
 This method polls the API for available missions and returns a json to send to `claimMission(missionJson)`
@@ -177,6 +200,31 @@ This method takes a json from the pollMission() function and attempts to claim a
   }
 ]
 ```
+
+## getNotificationToken()
+This method is used to obtain the bearer token used to authenticate to the notifications.synack.com API.
+
+## markNotificationsRead()
+This method marks all notifications as read.
+
+## pollNotifications()
+This method retrieves all unread notifications and returns a list of dicts with the following fields:
+```
+{
+  "id": INT,                  # ID of the notifications
+  "user_id": INT,             # Your synack ID (integer)
+  "subject": "STRING",        # Codename, dollar amount of transfer, etc..
+  "subject_type": "STRING",   # What is this? listing update, cashout, etc..
+  "action": "STRING",         # What is the action: outage_starts, scope, etc..
+  "url": "STRING",            # Relevant URL path
+  "created_at": "DATETIME",
+  "read": BOOL,               # true/false
+  "meta": {
+                              # All sorts of other stuff
+  }
+}
+```
+
 ## Docker setup
 There are few ways to run the module under docker, the fastest way will be to obtain it directly and run it using <br>
 ```docker run -d --name synackapi --dns 8.8.8.8 --rm -v ~/.synack:/root/.synack krasn/synackapi```<br>

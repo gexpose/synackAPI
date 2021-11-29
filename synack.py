@@ -1,5 +1,10 @@
 from netaddr import IPNetwork
 import requests
+<<<<<<< HEAD
+=======
+import re
+import os
+>>>>>>> b739e25f8b80975002c2beb7f28504a5d577fdf7
 import json
 from pathlib import Path
 import warnings
@@ -10,6 +15,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import configparser
 import time
 from datetime import datetime
@@ -22,11 +28,13 @@ warnings.filterwarnings("ignore")
 class synack:
     codename = None
     def __init__(self):
+        self.session = requests.Session()
         self.jsonResponse = []
         self.assessments = []
-        self.tokenPath = "/tmp/synacktoken"
         self.token = ""
+        self.notificationToken = ""
         self.url_registered_summary = "https://platform.synack.com/api/targets/registered_summary"
+        self.url_scope_summary = "https://platform.synack.com/api/targets/"
         self.url_activate_target = "https://platform.synack.com/api/launchpoint"
         self.url_assessments = "https://platform.synack.com/api/assessments"
         self.url_unregistered_slugs = "https://platform.synack.com/api/targets?filter%5Bprimary%5D=unregistered&filter%5Bsecondary%5D=all&filter%5Bcategory%5D=all&sorting%5Bfield%5D=dateUpdated&sorting%5Bdirection%5D=desc&pagination%5Bpage%5D="
@@ -35,8 +43,11 @@ class synack:
         self.url_hydra = "https://platform.synack.com/api/hydra_search/search/"
         self.url_published_missions = "https://platform.synack.com/api/tasks/v1/tasks?status=PUBLISHED"
         self.url_logout = "https://platform.synack.com/api/logout"
+        self.url_notification_token = "https://platform.synack.com/api/users/notifications_token"
+        self.url_notification_api = "https://notifications.synack.com/api/v2/"
         self.webheaders = {}
         self.configFile = str(Path.home())+"/.synack/synack.conf"
+        self.firefoxProfile = str(Path.home())+"/.synack/selenium.profile"
         self.config = configparser.ConfigParser()
         self.config.read(self.configFile)
         self.email = self.config['DEFAULT']['email']
@@ -44,10 +55,22 @@ class synack:
         self.login_wait = int(self.config['DEFAULT']['login_wait'])
         self.login_url = self.config['DEFAULT']['login_url']
         self.authySecret = self.config['DEFAULT']['authy_secret']
+<<<<<<< HEAD
         self.headless = True
+=======
+        self.sessionTokenPath = self.config['DEFAULT'].get('session_token_path',"/tmp/synacktoken")
+        self.notificationTokenPath = self.config['DEFAULT'].get('notification_token_path',"/tmp/notificationtoken")
+        self.connector = False
+        self.webdriver = None
+        self.headless = False
+        # set to false to use the requests-based login
+        self.gecko = self.config['DEFAULT'].getboolean('gecko',True)
+        self.proxyport = self.config['DEFAULT'].getint('proxyport',8080)
+>>>>>>> b739e25f8b80975002c2beb7f28504a5d577fdf7
 
 ## Set to 'True' for troubleshooting with Burp Suite ##
-        self.Proxy = False
+        self.Proxy = self.config['DEFAULT'].getboolean('proxy',False)
+
 #########
     def getAuthy(self):
         totp = pyotp.TOTP(self.authySecret)
@@ -58,12 +81,12 @@ class synack:
 
 ## Get Synack platform session token ##
     def getSessionToken(self):
-        if Path(self.tokenPath).exists():
-            with open(self.tokenPath, "r") as f:
+        if Path(self.sessionTokenPath).exists():
+            with open(self.sessionTokenPath, "r") as f:
                 self.token = f.readline()
             f.close()
         else:
-            raise IOError('No Synack token. Run the keepalive script.')
+            self.connectToPlatform()
         self.webheaders = {"Authorization": "Bearer " + self.token}
         response = self.try_requests("GET", self.url_profile, 10)
         profile = response.json()
@@ -74,8 +97,8 @@ class synack:
 #################################################
 
     def try_requests(self, func, URL, times, extra=None):
-        http_proxy  = "http://127.0.0.1:8080"
-        https_proxy = "http://127.0.0.1:8080"
+        http_proxy  = "http://127.0.0.1:%d" % self.proxyport
+        https_proxy = "http://127.0.0.1:%d" % self.proxyport
         proxyDict = {
             "http" : http_proxy,
             "https" : https_proxy
@@ -95,7 +118,7 @@ class synack:
                         putData = json.dumps({"listing_id": extra})
                         newHeaders = dict(self.webheaders)
                         newHeaders['Content-Type'] = "application/json"
-                        response = requests.put(URL, headers=newHeaders, data=putData, proxies=proxyDict, verify=False)
+                        response = self.session.put(URL, headers=newHeaders, data=putData, proxies=proxyDict, verify=False)
                         if response.status_code == 401 and platform in netloc:
                             self.connectToPlatform()
                             self.getSessionToken()
@@ -103,7 +126,7 @@ class synack:
                             return response
                     elif func == "GET":
                         if extra == None:
-                            response = requests.get(URL, headers=self.webheaders, proxies=proxyDict, verify=False)
+                            response = self.session.get(URL, headers=self.webheaders, proxies=proxyDict, verify=False)
                             if response.status_code == 401 and platform in netloc:
                                 self.connectToPlatform()
                                 self.getSessionToken()
@@ -111,14 +134,21 @@ class synack:
                                 return response
                         else:
                             parameters = {'page': extra}
-                            response = requests.get(URL, headers=self.webheaders, params=parameters, proxies=proxyDict, verify=False)
+                            response = self.session.get(URL, headers=self.webheaders, params=parameters, proxies=proxyDict, verify=False)
                             if response.status_code == 401 and platform in netloc:
                                 self.connectToPlatform()
                                 self.getSessionToken()
                             else:
                                 return response
                     elif func == "POST":
-                        response = requests.post(URL, headers=self.webheaders, proxies=proxyDict, json=extra, verify=False)
+                        response = self.session.post(URL, headers=self.webheaders, proxies=proxyDict, json=extra, verify=False)
+                        if response.status_code == 401 and platform in netloc:
+                            self.connectToPlatform()
+                            self.getSessionToken()
+                        else:
+                            return response
+                    elif func == "PATCH":
+                        response = self.session.patch(URL, headers=self.webheaders, proxies=proxyDict, json=extra, verify=False)
                         if response.status_code == 401 and platform in netloc:
                             self.connectToPlatform()
                             self.getSessionToken()
@@ -134,7 +164,7 @@ class synack:
                         putData = json.dumps({"listing_id": extra})
                         newHeaders = dict(self.webheaders)
                         newHeaders['Content-Type'] = "application/json"
-                        response =requests.put(URL, headers=newHeaders, data=putData, verify=False)
+                        response =self.session.put(URL, headers=newHeaders, data=putData, verify=False)
                         if response.status_code == 401 and platform in netloc:
                             self.connectToPlatform()
                             self.getSessionToken()
@@ -142,7 +172,7 @@ class synack:
                             return response
                     elif func == "GET":
                         if extra == None:
-                            response =requests.get(URL, headers=self.webheaders, verify=False)
+                            response =self.session.get(URL, headers=self.webheaders, verify=False)
                             if response.status_code == 401 and platform in netloc:
                                 self.connectToPlatform()
                                 self.getSessionToken()
@@ -150,14 +180,21 @@ class synack:
                                 return response
                         else:
                             parameters = {'page': extra}
-                            response = requests.get(URL, headers=self.webheaders, params=parameters, verify=False)
+                            response = self.session.get(URL, headers=self.webheaders, params=parameters, verify=False)
                             if response.status_code == 401 and platform in netloc:
                                 self.connectToPlatform()
                                 self.getSessionToken()
                             else:
                                 return response
                     elif func == "POST":
-                        response =  requests.post(URL, headers=self.webheaders, json=extra, verify=False)
+                        response =  self.session.post(URL, headers=self.webheaders, json=extra, verify=False)
+                        if response.status_code == 401 and platform in netloc:
+                            self.connectToPlatform()
+                            self.getSessionToken()
+                        else:
+                            return response
+                    elif func == "PATCH":
+                        response = self.session.patch(URL, headers=self.webheaders, json=extra, verify=False)
                         if response.status_code == 401 and platform in netloc:
                             self.connectToPlatform()
                             self.getSessionToken()
@@ -201,16 +238,20 @@ class synack:
 ########################################
 ## Returns a list of web or host target codenames
 ## that are (mission only / not mission only)
-## category: web || host || RE || mobile || sourceCode || harware
+## category: web || host || RE || mobile || sourceCode || hardware
 ## mission_only: True || False
 ########################################
     def getCodenames(self, category, mission_only=False):
-        if category.lower() == "web":
+        categories = ("web application", "re", "mobile", "host", "source code","hardware")
+        category = category.lower()
+        if category == "web":
             category = "web application"
-        if category.lower() == "re":
+        if category == "re":
             category = "reverse engineering"
-        if category.lower() == "sourceCode":
+        if category == "sourcecode":
             category = "source code"
+        if category not in categories:
+            raise Exception("Invalid category.")
         targets = []
         for i in range (len(self.jsonResponse)):
             if mission_only == True:
@@ -346,7 +387,8 @@ class synack:
                                         'netloc': netloc,
                                         'path': path,
                                         'port': port,
-                                        'wildcard': wildcard
+                                        'wildcard': wildcard,
+                                        'fullURI' : scheme+netloc
                                     }
                     allRules.append(scopeDict)
                     j+=1
@@ -355,7 +397,10 @@ class synack:
             scopeURL = "https://platform.synack.com/api/targets/"+slug+"/cidrs"
             cidrs = []
             x = 1
-            response = self.try_requests("GET", scopeURL, 10, x)
+            try:
+                response = self.try_requests("GET", scopeURL, 10, x)
+            except requests.exceptions.RequestException as e:
+                raise SystemExit(e)
             temp = json.dumps(response.json()['cidrs']).replace("[","").replace("]","").replace("\"","").replace(", ","\n").split("\n")
             cidrs.extend(temp)
             while len(temp) > 1:
@@ -396,9 +441,16 @@ class synack:
 ##########################################################
 ## This gets endpoints from Web Application "Analytics" ##
 ##########################################################
-    def getAnalytics(self, codename):
+    def getAnalytics(self, codename, status="all"):
         slug = self.getTargetID(codename)
-        url_analytics = self.url_analytics + slug
+        if status.lower() == "accepted":
+            url_analytics = self.url_analytics + slug + "&status=accepted"
+        elif status.lower() == "in_queue":
+            url_analytics = self.url_analytics + slug + "&status=in_queue"
+        elif status.lower() == "rejected":
+            url_analytics = self.url_analytics + slug + "&status=rejected"
+        else:
+            url_analytics = self.url_analytics + slug
         response = self.try_requests("GET", url_analytics, 10)
         jsonResponse = response.json()
         analytics = []
@@ -574,13 +626,69 @@ class synack:
 ###############
 ## Keepalive ##
 ###############
+
     def connectToPlatform(self):
+        if self.gecko:
+            return self.connectToPlatformGecko()
+        else:
+            return self.connectToPlatformRequests()
+
+    def connectToPlatformRequests(self):
+        # Pull a valid CSRF token for requests in login flow
+        response = self.try_requests("GET", "https://login.synack.com/", 10)
+        # <meta name="csrf-token" content="..."/>
+        m = re.search('<meta name="csrf-token" content="([^"]*)"', response.text)
+        csrf_token = m.group(1)
+        self.webheaders['X-CSRF-Token'] = csrf_token
+
+        data={"email":self.email,"password":self.password}
+        response = self.try_requests("POST", "https://login.synack.com/api/authenticate", 1, data)
+        jsonResponse = response.json()
+        if not jsonResponse['success']:
+            print("Error logging in: "+jsonResponse)
+            return False
+        
+        progress_token = jsonResponse['progress_token']
+
+        data={"authy_token":self.getAuthy(),"progress_token":progress_token}
+        response = self.try_requests("POST", "https://login.synack.com/api/authenticate", 1, data)
+        jsonResponse = response.json()
+
+        grant_token = jsonResponse['grant_token']
+
+        # 2 requests required here to confirm the grant token - once to the HTML page and once to the API
+        response = self.try_requests("GET", "https://platform.synack.com/?grant_token="+grant_token, 1)
+        self.webheaders['X-Requested-With'] = "XMLHttpRequest"
+        response = self.try_requests("GET", "https://platform.synack.com/token?grant_token="+grant_token, 1)
+        jsonResponse = response.json()
+        access_token = jsonResponse['access_token']
+
+        self.token = access_token
+        with open(self.sessionTokenPath,"w") as f:
+            f.write(self.token)
+        f.close()
+
+        # Remove these headers so they don't affect other requests
+        del self.webheaders['X-Requested-With']
+        del self.webheaders['X-CSRF-Token']
+
+
+    def connectToPlatformGecko(self):
+        isExist = os.path.exists(self.firefoxProfile)
+        if not isExist:
+            os.makedirs(self.firefoxProfile)
         options = Options()
+        options.add_argument("-profile")
+        options.add_argument(self.firefoxProfile)
+        firefox_capabilities = DesiredCapabilities.FIREFOX
+        firefox_capabilities['marionette'] = True
+
         if self.headless == True:
             options.headless = True
         else:
             options.headless = False
-        driver = webdriver.Firefox(options=options)
+#        driver = webdriver.Firefox(options=options)
+        driver = webdriver.Firefox(capabilities=firefox_capabilities, options=options)
         driver.get(self.login_url)
         assert "Synack" in driver.title
         ## Fill in the email address ##
@@ -602,12 +710,12 @@ class synack:
         authy_submit_path = '/html/body/div[2]/div/div/div[2]/form/fieldset/div[2]'
         driver.find_element_by_xpath(authy_submit_path).click()
         while True:
-            session = driver.execute_script("return sessionStorage.getItem('shared-session-com.synack.accessToken')")
-            if isinstance(session, str):
+            self.token = driver.execute_script("return sessionStorage.getItem('shared-session-com.synack.accessToken')")
+            if isinstance(self.token, str):
                 break
 ## Write the session token to /tmp/synacktoken ##
-        with open('/tmp/synacktoken',"w") as f:
-            f.write(session)
+        with open(self.sessionTokenPath,"w") as f:
+            f.write(self.token)
         f.close()
         IST = pytz.timezone('Asia/Kolkata')
         time_now = datetime.now(tz=IST)
@@ -615,6 +723,8 @@ class synack:
         print("Connected to platform  -  " + time_now_string)
         if self.headless == True:
             driver.quit()
+        if self.connector == True:
+            self.webdriver = driver
         return(0)
 
 ###########
@@ -687,4 +797,101 @@ class synack:
             missionDict = {"target": listingID, "payout": payout, "claimed": claimed}
             missionList.append(missionDict)
         return(missionList)
-            
+
+########################
+## Notification Token ##
+########################
+
+    def getNotificationToken(self):
+        response = self.try_requests("GET", self.url_notification_token, 10)
+        try:
+            jsonResponse = response.json()
+        except:
+            jsonResponse = {}
+            return(1)
+        self.notificationToken = jsonResponse['token']
+        with open(self.notificationTokenPath,"w") as f:
+            f.write(self.notificationToken)
+        return(0)
+
+############################
+## Read All Notifications ##
+############################
+
+    def markNotificationsRead(self):
+        if not self.notificationToken:
+            self.getNotificationToken()
+        readNotifications = self.url_notification_api+"read_all?authorization_token="+self.notificationToken
+        del self.webheaders['Authorization']
+        response = self.try_requests("POST", readNotifications, 10)
+        self.webheaders['Authorization'] = "Bearer " + self.token
+        try:
+            textResponse = str(response.content)
+        except:
+            return(1)
+        return(0)
+
+########################
+## Read Notifications ##
+########################
+
+    def pollNotifications(self):
+        pageIterator=1
+        breakOuterLoop = 0
+        notifications = []
+        if not self.notificationToken:
+            self.getNotificationToken()
+        while True:
+            notificationsUrl = self.url_notification_api+"notifications?pagination%5Bpage%5D="+str(pageIterator)+"&pagination%5Bper_page%5D=15&meta=1"
+            self.webheaders['Authorization'] = "Bearer " + self.notificationToken
+            response = self.try_requests("GET", notificationsUrl, 10)
+            self.webheaders['Authorization'] = "Bearer " + self.token
+            try:
+                jsonResponse = response.json()
+            except:
+                return(1)
+            if not jsonResponse:
+                break
+            for i in range(len(jsonResponse)):
+                if jsonResponse[i]["read"] == False:
+                    notifications.append(jsonResponse[i])
+                else:
+                    breakOuterLoop=1
+                    break    
+            if breakOuterLoop == 1:
+                break
+            else:
+                pageIterator=pageIterator+1
+        return(notifications)
+
+#############################
+## Get Current Target Slug ##
+#############################
+
+    def getCurrentTargetSlug(self):
+        response = self.try_requests("GET", self.url_activate_target, 10)
+        try:
+            jsonResponse = response.json()
+        except:
+            return(1)
+        if jsonResponse['slug']:
+            return(jsonResponse['slug'])
+
+##############
+## Get ROEs ##
+##############
+
+    def getRoes(self, slug):
+        requestURL = self.url_scope_summary + str(slug)
+        response = self.try_requests("GET", requestURL, 10)
+        roes = list()
+        try:
+            jsonResponse = response.json()
+        except:
+            return(1)
+        if not jsonResponse['roes']:
+            return(roes)
+        else:
+            for i in range(len(jsonResponse['roes'])):
+                roes.append(jsonResponse['roes'][i])
+            return(roes)
