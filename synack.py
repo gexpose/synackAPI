@@ -979,3 +979,42 @@ class synack:
         return(transactions)
 
 
+###################################
+## Get Transactions (BountyDash) ##
+###################################
+    def getBountyDash(self):
+        pageIterator=1
+        breakOuterLoop = 0
+        transactions = ["report_id,report_title,program_name,total_amount,amount,bonus_amount,currency,awarded_at,status"]
+        while True:
+            transactionUrl = self.url_transactions+"?page="+str(pageIterator)+"&per_page=15"
+            response = self.try_requests("GET", transactionUrl, 10)
+            try:
+                jsonResponse = response.json()
+            except:
+                return(1)
+            if not jsonResponse:
+                break
+            for i in range(len(jsonResponse)):
+                if jsonResponse[i]["title"] == "CashOut":
+                    continue
+                else:
+                    if float(jsonResponse[i]['amount']) < 0:
+                        amount = float(jsonResponse[i]['amount']) * -1
+                    else:
+                        amount = float(jsonResponse[i]['amount'])
+
+                    amount = str(amount)
+                    ts = datetime.datetime.fromtimestamp(jsonResponse[i]['created_at'])
+                    report_id = str(int(jsonResponse[i]['id']))
+                    report_title = str(jsonResponse[i]['title'].replace("\"",""))
+                    program_name="Undefined"
+                    if jsonResponse[i]['title'] == "Patch Verification":
+                        program_name="Patch Verification"
+                    else:
+                        program_name=jsonResponse[i]['reference_id'].split("-")[0]
+                    data=report_id+","+report_title+","+program_name+","+amount+","+amount+",0,USD,"+ts.strftime('%Y-%m-%d')+"T00:00:00.000,sent"
+                    transactions.append(data)
+
+            pageIterator=pageIterator+1
+        return(transactions)
