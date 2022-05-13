@@ -32,5 +32,8 @@ RUN pip install -r requirements.txt
 # copy the content of the local src directory to the working directory
 COPY ./ .
 
+# install as a module
+RUN bash -c "cd /synackAPI && pip install -e ."
+
 # command to run on container start
-CMD [ "python3", "/synackAPI/polling.py" ]
+CMD [ "synack", "polling" ]

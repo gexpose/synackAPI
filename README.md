@@ -55,6 +55,12 @@ webhook_url = https://hooks.slack.com/services/...
 * session_token_path (default /tmp/synacktoken) - location to store synack token
 * notification_token_path (default /tmp/notificationtoken) - location to store notification token
 
+## Installing as a python module
+This can be installed as a python module named `synack` for easy integration with other python code. To install, you can enter the SynackAPI directory and run the following:
+```
+pip3 install -e .
+```
+
 ## requirements.txt
 Your best bet to have all required python3 modules is to run `pip3 install -r requirements.txt`. I cannot help troubleshoot any other modules.
 
@@ -72,6 +78,10 @@ s1 = synack()
 s1.getSessionToken()
 s1.getAllTargets()
 ```
+
+# Console command
+Once installed as a python module, you can use `synack` as a console command, specifying the name of a script in the `tools` directory. For example, to find the current target, you can run `synack currentTarget`. A CLI is available which wraps around most of the `synack` class functions, if you run `synack cli`.
+
 ## synack()
 This method creates an object that can be used to interact with the LP/LP+ platform.
 

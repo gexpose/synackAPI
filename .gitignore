@@ -1,4 +1,5 @@
 __pycache__
+synack.egg-info
 .sessiontoken
 .synacktoken
 .notificationtoken
