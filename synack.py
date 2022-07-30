@@ -633,6 +633,30 @@ class synack:
                                 analyticsDict['status'] = str(jsonResponse['value'][value]['exploitable_locations'][exploitable_location]['status'])
                             analytics.append(analyticsDict)
             return analytics
+        elif targetType == "Mobile":
+            if "value" in jsonResponse:
+                for value in range(len(jsonResponse['value'])):
+                    for exploitable_location in range(len(jsonResponse['value'][value]['exploitable_locations'])):
+                        analyticsDict = {}
+                        analyticsDict['codename'] = codename
+                        analyticsDict['vuln_category'] = str(jsonResponse['value'][value]['categories'][0])
+                        if len(jsonResponse['value'][value]['categories']) == 2:
+                            analyticsDict['vuln_subcategory'] = str(jsonResponse['value'][value]['categories'][1])
+                        if jsonResponse['value'][value]['exploitable_locations'][exploitable_location]['type']:
+                            try:
+                                analyticsDict['type'] = str(jsonResponse['value'][value]['exploitable_locations'][exploitable_location]['type'])
+                            except:
+                                analyticsDict['type'] = ""
+                            try:
+                                analyticsDict['value'] = str(jsonResponse['value'][value]['exploitable_locations'][exploitable_location]['value'])
+                            except:
+                                analyticsDict['value'] = ""
+                            try:
+                                analyticsDict['status'] = str(jsonResponse['value'][value]['exploitable_locations'][exploitable_location]['status'])
+                            except:
+                                analyticsDict['status'] = ""                            
+                            analytics.append(analyticsDict)
+            return analytics
 
 #############################################
 ## This registers all unregistered targets ##
