@@ -632,6 +632,7 @@ class synack:
                             else:
                                 analyticsDict['status'] = str(jsonResponse['value'][value]['exploitable_locations'][exploitable_location]['status'])
                             analytics.append(analyticsDict)
+            return analytics
         elif targetType == "Mobile":
             if "value" in jsonResponse:
                 for value in range(len(jsonResponse['value'])):
